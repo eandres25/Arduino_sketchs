@@ -19,70 +19,70 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 public class Football extends Activity implements SensorEventListener {
-    String robotBtAddress="00:07:80:83:AB:6A"; // Change this 
+    String robotBtAddress="07:12:04:13:23:60"; // Change this
     TextView statusTv;
     TextView messagesTv;
-    TBlue tBlue; 
+    TBlue tBlue;
     SensorManager sensorManager;
     Sensor sensor;
     float g=9.81f; // m/s**2
     float x, y, z, l, r;
-    boolean kick; 
+    boolean kick;
     int skipped; // continuously skipped sending because robot not ready
-    Handler timerHandler; 
-    Runnable sendToArduino; 
+    Handler timerHandler;
+    Runnable sendToArduino;
 
     /*** Main - automatically called methods ***/
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        initGUI(); 
-        timerHandler = new Handler(); 
-        sendToArduino = new Runnable() { 
+        initGUI();
+        timerHandler = new Handler();
+        sendToArduino = new Runnable() {
             public void run() {
-                sendLR(); 
-                timerHandler.postDelayed(this, 250); 
+                sendLR();
+                timerHandler.postDelayed(this, 250);
             }
         };
     }
 
     @Override
-    public void onResume() 
+    public void onResume()
     {
-        super.onResume(); 
+        super.onResume();
         initAccel();
 
-        timerHandler.postDelayed(sendToArduino, 1000); 
+        timerHandler.postDelayed(sendToArduino, 1000);
         
-        skipped=9999; // force Bluetooth reconnection 
-    } 
+        skipped=9999; // force Bluetooth reconnection
+    }
 
     @Override
     public void onPause() {
         super.onPause();
-        r = 0; 
+        r = 0;
         l = 0;
         sendLR();
 
         closeAccel();
         closeBluetooth();
 
-        timerHandler.removeCallbacks(sendToArduino); 
+        timerHandler.removeCallbacks(sendToArduino);
         msg("Paused. \n");
     }
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        x=event.values[1]/g;    // earth gravity along axis results 1.0
+        x=event.values[1]/g; // earth gravity along axis results 1.0
         y=event.values[2]/g;
         z=event.values[0]/g;
-        updateLR(); 
+        updateLR();
     }
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        // Must have when Activity implements SensorEventListener. 
+        // Must have when Activity implements SensorEventListener.
     }
 
 
@@ -95,19 +95,19 @@ public class Football extends Activity implements SensorEventListener {
         setRequestedOrientation(
                 ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         getWindow().setFlags(
-                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON, 
+                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON,
                 WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
-        // Contents 
+        // Contents
         LinearLayout container=new LinearLayout(this);
         container.setOrientation(android.widget.LinearLayout.VERTICAL);
         statusTv = new TextView(this);
         Log.i("FB", "User interface half way.. ");
         container.addView(statusTv);
-        //msg("statusTv added. ");  
+        //msg("statusTv added. ");
         messagesTv = new TextView(this);
         messagesTv.setText("");
         container.addView(messagesTv);
-        setContentView(container); 
+        setContentView(container);
     }
 
     public void msg(String s)
@@ -121,8 +121,8 @@ public class Football extends Activity implements SensorEventListener {
     {
         Vibrator vibra = (Vibrator) getSystemService(
                 Context.VIBRATOR_SERVICE);
-        vibra.vibrate(200); 
-    } 
+        vibra.vibrate(200);
+    }
 
 
 
@@ -135,9 +135,9 @@ public class Football extends Activity implements SensorEventListener {
         sensor=sensorManager.getDefaultSensor(
                 Sensor.TYPE_ACCELEROMETER);
         sensorManager.registerListener(
-                this, 
-                sensor, 
-                sensorManager.SENSOR_DELAY_NORMAL);
+                this,
+                sensor,
+                SensorManager.SENSOR_DELAY_NORMAL);
     }
 
     void closeAccel()
@@ -153,7 +153,7 @@ public class Football extends Activity implements SensorEventListener {
     void initBluetooth()
     {
         msg("Bluetooth initialization... ");
-        skipped=0; 
+        skipped=0;
         tBlue=new TBlue(robotBtAddress);
         if (tBlue.streaming()) {
             msg("Bluetooth OK. ");
@@ -172,16 +172,16 @@ public class Football extends Activity implements SensorEventListener {
 
     /*** Motor calculations for left and right ***/
 
-    void updateLR() 
+    void updateLR()
     {
         kick=false;
-        if (1.5<Math.abs(y)) kick=true; 
+        if (1.5<Math.abs(y)) kick=true;
         l=y;
         r=l;
         l+=x;
         r-=x;
 
-        if (l+r<0) { // make reverse turn work like in a car 
+        if (l+r<0) { // make reverse turn work like in a car
             float tmp=l;
             l=r;
             r=tmp;
@@ -191,7 +191,7 @@ public class Football extends Activity implements SensorEventListener {
         r=constrain(r);
     }
 
-    float constrain(float f) 
+    float constrain(float f)
     {
         if (f<-1) f=-1;
         if (1<f) f=1;
@@ -200,42 +200,42 @@ public class Football extends Activity implements SensorEventListener {
 
     void sendLR()
     {
-        if ( (skipped>20) ) { 
+        if ( (skipped>20) ) {
             closeAccel();
             initBluetooth();
             initAccel();
         }
-        if (!tBlue.streaming()) { 
+        if (!tBlue.streaming()) {
             msg("0");
             skipped++;
             return;
         }
 
-        String s=""; 
+        String s="";
         s+="S";
-        s+=(char) Math.floor(l*5 + 5);    // 0 <= l <= 10
-        s+=(char) Math.floor(r*5 + 5);    // 0 <= l <= 10
+        s+=(char) Math.floor(l*5 + 5); // 0 <= l <= 10
+        s+=(char) Math.floor(r*5 + 5); // 0 <= l <= 10
         if (kick) s+="k"; else s+="-";
         s+="U";
 
         statusTv.setText(String.format(
-                "%s    left: %3.0f%% right: %3.0f%%, kick: %b.", 
-                s, Math.floor(l*100), Math.floor(r*100), 
+                "%s left: %3.0f%% right: %3.0f%%, kick: %b.",
+                s, Math.floor(l*100), Math.floor(r*100),
                 kick));
 
-        tBlue.write("?"); 
-        String in=tBlue.read(); 
+        tBlue.write("?");
+        String in=tBlue.read();
         msg(""+in);
         if (in.startsWith("L") && tBlue.streaming()) {
             Log.i("fb", "Clear to send, sending... ");
-            tBlue.write(s); 
+            tBlue.write(s);
             skipped=0;
         } else {
             Log.i("fb", "Not ready, skipping send. in: \""+ in+"\"");
-            skipped++; 
+            skipped++;
             msg("!");
         }
-        if (kick) vibrate(); 
+        if (kick) vibrate();
     }
 
 }

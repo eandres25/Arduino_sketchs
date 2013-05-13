@@ -1,8 +1,6 @@
 // footballrobot.pde - Footballrobot for cellphone control 
 // (c) Kimmo Karvinen & Tero Karvinen http://BotBook.com
 
-#include <Servo.h>
-
 // Keep track of how far along we are reading a message
 const int READY = 1;                // Ready to receive a message
 const int RECEIVED_START = 2;       // Received the start character: 'S'
@@ -13,52 +11,37 @@ const int RECEIVED_KICK = 5;        // Received the kick indicator
 int state = READY;
 
 // Define the pins and declare the servo objects.
-int servoRightPin=2;
-int servoLeftPin=3;
-int servoKickPin=4;
+int RightPin=2;
+int LeftPin=3;
+int KickPin=4;
 
-Servo kickerServo;
-Servo servoRight;
-Servo servoLeft;
+long Wait   = 1750;
 
-// Various positions and settings for the kicker.
-int kickerNeutral = 130;
-int kickerKick    = 10;
-long kickerWait   = 750;
-
-// Limit our speed; this needs to be a value between 0 and 90
-int maxSpeed = 10;
-
-// Current speeds/kicker setting
 int kickNow=0; 
-int leftSpeed  = 90;
-int rightSpeed = 90;
-
-// Temporary speed variables used while we are processing a command.
-int newLeftSpeed;
-int newRightSpeed;
-
-int ledPin=13;  // LED output pin
 
 void kick()
 {
-  kickerServo.write(kickerKick);
-  delay(kickerWait);
-  kickerServo.write(kickerNeutral);
-  //Serial.println("Kicking!");
-}
-
-void move()
-{
-  servoLeft.write(leftSpeed);
-  servoRight.write(rightSpeed);
+  digitalWrite(KickPin, HIGH);
+  delay(Wait);
+  digitalWrite(KickPin, LOW);
+  delay(Wait);
+  Serial.println("Kicking!");
 }
 
 void stopMoving()
 {
-  leftSpeed = 90;
-  rightSpeed = 90;
+  digitalWrite(RightPin, LOW);
+  digitalWrite(LeftPin, LOW);
 }
+
+void move()
+{
+  //digitalWrite(RightPin, HIGH);
+  //digitalWrite(LeftPin, HIGH);
+  //delay(Wait);
+  //stopMoving();
+}
+
 
 void setup()
 {
@@ -67,20 +50,15 @@ void setup()
 //  pinMode(txPin, OUTPUT);
 //  mySerial.begin(1200);
 
+  Serial.begin(9600);
 
-  pinMode(ledPin, OUTPUT);
-  digitalWrite(ledPin, HIGH);
+  Serial.println("Starting!");
+  pinMode(RightPin, OUTPUT);
+  pinMode(LeftPin, OUTPUT);
+  pinMode(KickPin, OUTPUT);
+  kick();
+  move();
 
-  servoRight.attach(servoRightPin);
-  servoLeft.attach(servoLeftPin);
-
-  kickerServo.attach(servoKickPin);
-  kickerServo.write(kickerNeutral);
-
-  stopMoving();
-
-  Serial.begin(57600);
-  digitalWrite(ledPin, LOW);
 }
 
 void loop()
@@ -106,7 +84,7 @@ void loop()
         state = RECEIVED_LEFT_SPEED;
         
         // Set the temporary left speed value
-        newLeftSpeed = map(int(ch), 0, 10, 90-maxSpeed, 90+maxSpeed); 
+        //newLeftSpeed = map(int(ch), 0, 10, 90-maxSpeed, 90+maxSpeed); 
       } 
       else { // Invalid input--go back to the ready state
         state = READY;
@@ -118,7 +96,7 @@ void loop()
         state = RECEIVED_RIGHT_SPEED;
 
         // Set the temporary right speed value
-        newRightSpeed = 180 - map(int(ch), 0, 10, 90-maxSpeed, 90+maxSpeed); 
+        //newRightSpeed = 180 - map(int(ch), 0, 10, 90-maxSpeed, 90+maxSpeed); 
       } 
       else { // Invalid input--go back to the ready state
         state = READY;
@@ -138,8 +116,8 @@ void loop()
     case RECEIVED_KICK:
       if ('U' == ch) { // Reached the end of the message
       
-        leftSpeed = newLeftSpeed;   // Set the speeds
-        rightSpeed = newRightSpeed;
+        //leftSpeed = newLeftSpeed;   // Set the speeds
+        //rightSpeed = newRightSpeed;
         
         if (kickNow) { // Are we supposed to kick now?
           kick();
